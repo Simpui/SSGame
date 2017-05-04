@@ -6,7 +6,7 @@ public class AtmosphericsMain : MonoBehaviour {
     public List<List<Tile>> Grid = new List<List<Tile>>();
     public int WorldSizeX, WorldSizeY;
     public float TileSize;
-    [Range(0.0f, 1.0f)]
+    //[Range(0.0f, 1.0f)]
     public float rateOfTemperatureChange; // 1.0f is instant equalization between temperatures.
     public float planckTemperature;
     public float timePerAtmosTick;
@@ -18,22 +18,36 @@ public class AtmosphericsMain : MonoBehaviour {
         Random.InitState((int) System.DateTime.Now.Ticks);
 	    for(int i=0; i<WorldSizeY; i++) {
             Grid.Add(new List<Tile>());
-            print("Created Row " + i);
+            //print("Created Row " + i);
             for(int j=0; j<WorldSizeX; j++) {
                 Grid[i].Insert(j, new Tile());
                 Grid[i][j].x = j;
                 Grid[i][j].y = i;
-                Grid[i][j].temperature = Random.Range(0.0f, 1000.0f);
-                print("Created Tile("+j+", "+i+")");
+                Grid[i][j].temperature = Random.Range(273.0f, 1000.0f);
+                if(i < 10) {
+                    Grid[i][j].temperature = Random.Range(0.0f, 273.0f);
+                }
+                if(i == 10) {
+                    Grid[i][j].isGas = true;
+                } else {
+                    Grid[i][j].isGas = true;
+                }
+                //print("Created Tile("+j+", "+i+")");
             }
         }	
 	}
 	
 	void Update () {
         if(Input.GetMouseButton(0)) {
-            Tile tile = findClosestTile(Camera.main.ScreenToWorldPoint(Input.mousePosition));
-            tile.temperature = 1000.0f;
+            foreach(List<Tile> y in Grid) {
+                foreach(Tile x in y) {
+                    if(x.y == 10) {
+                        x.isGas = true;
+                    }
+                }
+            }
         }
+        print(Grid[10][10].temperature);
         if(timeOfNextAtmosTick <= Time.time) {
             // To spread temperature, we have a sorted list of the temperatures of every tile
             // The tiles are spread in order and then discarded by checking the neighboring tiles of them and spreading heat
@@ -44,72 +58,74 @@ public class AtmosphericsMain : MonoBehaviour {
             List<List<Tile>> newGrid = CopyGrid(Grid); ;
             for(int i = 0; i < sortedList.Count; i++) {
                 Tile tile = Grid[sortedList[i].y][sortedList[i].x];
-                float totalTempChange = 0.0f;
-                //0 = x+1
-                if(tile.x + 1 < Grid[tile.y].Count) {
-                    Tile tile2 = Grid[tile.y][tile.x + 1];
-                    if(tile.temperature > tile2.temperature) {
-                        totalTempChange += equalizeTiles(tile, ref tile2);
+                if(tile.isGas) {
+                    float totalTempChange = 0.0f;
+                    //0 = x+1
+                    if(tile.x + 1 < Grid[tile.y].Count && Grid[tile.y][tile.x + 1].isGas) {
+                        Tile tile2 = Grid[tile.y][tile.x + 1];
+                        if(tile.temperature > tile2.temperature) {
+                            totalTempChange += equalizeTiles(tile, ref tile2);
+                        }
+                        newGrid[tile.y][tile.x + 1] = tile2;
                     }
-                    newGrid[tile.y][tile.x + 1] = tile2;
-                }
-                //1 = x-1
-                if(tile.x - 1 >= 0) {
-                    Tile tile2 = Grid[tile.y][tile.x - 1];
-                    if(tile.temperature > Grid[tile.y][tile.x - 1].temperature) {
-                        totalTempChange += equalizeTiles(tile, ref tile2);
+                    //1 = x-1
+                    if(tile.x - 1 >= 0 && Grid[tile.y][tile.x - 1].isGas) {
+                        Tile tile2 = Grid[tile.y][tile.x - 1];
+                        if(tile.temperature > Grid[tile.y][tile.x - 1].temperature) {
+                            totalTempChange += equalizeTiles(tile, ref tile2);
+                        }
+                        newGrid[tile.y][tile.x - 1] = tile2;
                     }
-                    newGrid[tile.y][tile.x - 1] = tile2;
-                }
-                // 2 = y+1
-                if(tile.y + 1 < Grid.Count) {
-                    Tile tile2 = Grid[tile.y + 1][tile.x];
-                    if(tile.temperature > Grid[tile.y + 1][tile.x].temperature) {
-                        totalTempChange += equalizeTiles(tile, ref tile2);
+                    // 2 = y+1
+                    if(tile.y + 1 < Grid.Count && Grid[tile.y+1][tile.x].isGas) {
+                        Tile tile2 = Grid[tile.y + 1][tile.x];
+                        if(tile.temperature > Grid[tile.y + 1][tile.x].temperature) {
+                            totalTempChange += equalizeTiles(tile, ref tile2);
+                        }
+                        newGrid[tile.y + 1][tile.x] = tile2;
                     }
-                    newGrid[tile.y + 1][tile.x] = tile2;
-                }
-                //3 = y-1
-                if(tile.y - 1 >= 0) {
-                    Tile tile2 = Grid[tile.y - 1][tile.x];
-                    if(tile.temperature > Grid[tile.y - 1][tile.x].temperature) {
-                        totalTempChange += equalizeTiles(tile, ref tile2);
+                    //3 = y-1
+                    if(tile.y - 1 >= 0 && Grid[tile.y-1][tile.x].isGas) {
+                        Tile tile2 = Grid[tile.y - 1][tile.x];
+                        if(tile.temperature > Grid[tile.y - 1][tile.x].temperature) {
+                            totalTempChange += equalizeTiles(tile, ref tile2);
+                        }
+                        newGrid[tile.y - 1][tile.x] = tile2;
                     }
-                    newGrid[tile.y - 1][tile.x] = tile2;
-                }
-                //4 = xy+1
-                if(tile.x + 1 < Grid[tile.y].Count && tile.y + 1 < Grid.Count) {
-                    Tile tile2 = Grid[tile.y + 1][tile.x + 1];
-                    if(tile.temperature > Grid[tile.y + 1][tile.x + 1].temperature) {
-                        totalTempChange += equalizeTiles(tile, ref tile2);
+                    //4 = xy+1
+                    if(tile.x + 1 < Grid[tile.y].Count && tile.y + 1 < Grid.Count && Grid[tile.y+1][tile.x + 1].isGas) {
+                        Tile tile2 = Grid[tile.y + 1][tile.x + 1];
+                        if(tile.temperature > Grid[tile.y + 1][tile.x + 1].temperature) {
+                            totalTempChange += equalizeTiles(tile, ref tile2);
+                        }
+                        newGrid[tile.y + 1][tile.x + 1] = tile2;
                     }
-                    newGrid[tile.y + 1][tile.x + 1] = tile2;
-                }
-                //5 = x-1y+1
-                if(tile.x - 1 >= 0 && tile.y + 1 < Grid.Count) {
-                    Tile tile2 = Grid[tile.y + 1][tile.x - 1];
-                    if(tile.temperature > Grid[tile.y + 1][tile.x - 1].temperature) {
-                        totalTempChange += equalizeTiles(tile, ref tile2);
+                    //5 = x-1y+1
+                    if(tile.x - 1 >= 0 && tile.y + 1 < Grid.Count && Grid[tile.y+1][tile.x - 1].isGas) {
+                        Tile tile2 = Grid[tile.y + 1][tile.x - 1];
+                        if(tile.temperature > Grid[tile.y + 1][tile.x - 1].temperature) {
+                            totalTempChange += equalizeTiles(tile, ref tile2);
+                        }
+                        newGrid[tile.y + 1][tile.x - 1] = tile2;
                     }
-                    newGrid[tile.y + 1][tile.x - 1] = tile2;
-                }
-                //6 = xy-1
-                if(tile.x - 1 >= 0 && tile.y - 1 >= 0) {
-                    Tile tile2 = Grid[tile.y - 1][tile.x - 1];
-                    if(tile.temperature > Grid[tile.y - 1][tile.x - 1].temperature) {
-                        totalTempChange += equalizeTiles(tile, ref tile2);
+                    //6 = xy-1
+                    if(tile.x - 1 >= 0 && tile.y - 1 >= 0 && Grid[tile.y-1][tile.x - 1].isGas) {
+                        Tile tile2 = Grid[tile.y - 1][tile.x - 1];
+                        if(tile.temperature > Grid[tile.y - 1][tile.x - 1].temperature) {
+                            totalTempChange += equalizeTiles(tile, ref tile2);
+                        }
+                        newGrid[tile.y - 1][tile.x - 1] = tile2;
                     }
-                    newGrid[tile.y - 1][tile.x - 1] = tile2;
-                }
-                //7 = x+1y-1
-                if(tile.x + 1 < Grid[tile.y].Count && tile.y - 1 >= 0) {
-                    Tile tile2 = Grid[tile.y - 1][tile.x + 1];
-                    if(tile.temperature > Grid[tile.y - 1][tile.x + 1].temperature) {
-                        totalTempChange += equalizeTiles(tile, ref tile2);
+                    //7 = x+1y-1
+                    if(tile.x + 1 < Grid[tile.y].Count && tile.y - 1 >= 0 && Grid[tile.y-1][tile.x + 1].isGas) {
+                        Tile tile2 = Grid[tile.y - 1][tile.x + 1];
+                        if(tile.temperature > Grid[tile.y - 1][tile.x + 1].temperature) {
+                            totalTempChange += equalizeTiles(tile, ref tile2);
+                        }
+                        newGrid[tile.y - 1][tile.x + 1] = tile2;
                     }
-                    newGrid[tile.y - 1][tile.x + 1] = tile2;
+                    tile.temperature -= totalTempChange;
                 }
-                tile.temperature -= totalTempChange;
             }
             Grid = newGrid;
             timeOfNextAtmosTick = Time.time + timePerAtmosTick;
@@ -135,8 +151,8 @@ public class AtmosphericsMain : MonoBehaviour {
 
     public float equalizeTiles(Tile x, ref Tile y) {
         if(x.temperature > y.temperature) { // Neighbor is hotter, equalize by rate of heat transfer
-            //float temperatureToExchange = (x.temperature - y.temperature) * rateOfTemperatureChange;
-            float temperatureToExchange = rateOfTemperatureChange;
+            //float temperatureToExchange = (x.temperature - y.temperature) * rateOfTemperatureChange * timePerAtmosTick;
+            float temperatureToExchange = rateOfTemperatureChange * timePerAtmosTick;
             if(temperatureToExchange < planckTemperature) {
                 y.temperature = x.temperature;
             }
@@ -166,6 +182,10 @@ public class AtmosphericsMain : MonoBehaviour {
         if(DrawTemperature) {
             foreach(List<Tile> y in Grid) {
                 foreach(Tile x in y) {
+                    if(!x.isGas) {
+                        Gizmos.color = Color.black;
+                        Gizmos.DrawCube(new Vector3(x.x * TileSize, 0.0f, x.y * TileSize), new Vector3(TileSize, TileSize, TileSize));
+                    } else
                     if(x.temperature >= 273.0f) {
                         Gizmos.color = new Color(1.0f, 0.0f, 0.0f, Mathf.InverseLerp(273.0f, 1000.0f, x.temperature));
                         Gizmos.DrawCube(new Vector3(x.x * TileSize, 0.0f, x.y * TileSize), new Vector3(TileSize, TileSize, TileSize));
@@ -198,4 +218,6 @@ public class Tile {
     public int x { get; set; }
     public int y { get; set; }
     public float temperature { get; set; }
+    public bool isGas; // Name confusing; Basically a wall would have different temperature spread(to be added later) and would mostly block temperature spread compared to air. Something that isn't gas shouldn't have
+                       // gas spread, but some specialized later thing that takes into account that different materials have different heat conduction. 
 }
