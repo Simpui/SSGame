@@ -47,15 +47,14 @@ public class AtmosphericsMain : MonoBehaviour {
                 }
             }
         }
-        print(Grid[10][10].temperature);
         if(timeOfNextAtmosTick <= Time.time) {
             // To spread temperature, we have a sorted list of the temperatures of every tile
             // The tiles are spread in order and then discarded by checking the neighboring tiles of them and spreading heat
             // Tiles that are higher temperature than a neighboring tile should spread heat relative to the difference in temperature. 
             List<Tile> sortedList = SortTemperatures(Grid);
             // Now that we have a sorted list of temperatures, we want to start with the highest one and go downwards, comparing them to their neighbors, IE x+-1, y+-1 as well as x+-1&y+-1
-
-            List<List<Tile>> newGrid = CopyGrid(Grid); ;
+            List<List<Tile>> newGrid = CopyGrid(Grid);
+ 
             for(int i = 0; i < sortedList.Count; i++) {
                 Tile tile = Grid[sortedList[i].y][sortedList[i].x];
                 if(tile.isGas) {
@@ -151,8 +150,8 @@ public class AtmosphericsMain : MonoBehaviour {
 
     public float equalizeTiles(Tile x, ref Tile y) {
         if(x.temperature > y.temperature) { // Neighbor is hotter, equalize by rate of heat transfer
-            //float temperatureToExchange = (x.temperature - y.temperature) * rateOfTemperatureChange * timePerAtmosTick;
-            float temperatureToExchange = rateOfTemperatureChange * timePerAtmosTick;
+            float temperatureToExchange = (x.temperature - y.temperature) * rateOfTemperatureChange * timePerAtmosTick;
+            //float temperatureToExchange = rateOfTemperatureChange * timePerAtmosTick;
             if(temperatureToExchange < planckTemperature) {
                 y.temperature = x.temperature;
             }
