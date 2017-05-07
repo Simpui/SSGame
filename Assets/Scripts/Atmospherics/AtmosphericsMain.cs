@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class AtmosphericsMain : MonoBehaviour {
-    public List<List<Tile>> Grid = new List<List<Tile>>();
+    private List<List<Tile>> Grid = new List<List<Tile>>();
     public int WorldSizeX, WorldSizeY;
     public float TileSize;
     //[Range(0.0f, 1.0f)]
@@ -13,6 +13,7 @@ public class AtmosphericsMain : MonoBehaviour {
     public float timeOfNextAtmosTick;
 
     public bool DrawTemperature;
+
 	void Start () {
         timeOfNextAtmosTick = Time.time;
         Random.InitState((int) System.DateTime.Now.Ticks);
